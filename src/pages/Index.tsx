@@ -10,7 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/components/ui/use-toast";
-import { Plus, Edit2, Trash2, Download, Upload, Eye, FileText, Image, CheckCircle, AlertCircle } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
+import { Plus, Edit2, Trash2, Download, Upload, Eye, FileText, Image, CheckCircle, AlertCircle, Moon, Sun, Sparkles, Zap, BookOpen, Clock, Users, Award, TrendingUp, BarChart3, PieChart, Target, Layers, Globe } from "lucide-react";
 
 interface Question {
   id: string;
@@ -42,6 +44,7 @@ const Index = () => {
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [previewQuestions, setPreviewQuestions] = useState<Question[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const addNewQuestion = () => {
     const newQuestion: Question = {
@@ -128,11 +131,9 @@ const Index = () => {
 
       let currentLine = 0;
 
-      // Extract question (first non-empty line that doesn't start with a letter followed by ')')
       while (currentLine < lines.length) {
         const line = lines[currentLine].trim();
         if (line && !line.match(/^[a-d]\)/)) {
-          // Remove question number if present (e.g., "1. ", "2. ")
           questionText = line.replace(/^\d+\.\s*/, "");
           currentLine++;
           break;
@@ -140,7 +141,6 @@ const Index = () => {
         currentLine++;
       }
 
-      // Extract options
       while (currentLine < lines.length) {
         const line = lines[currentLine].trim();
         if (line.match(/^[a-d]\)/)) {
@@ -155,7 +155,6 @@ const Index = () => {
           }
           currentLine++;
         } else if (line.startsWith('👉') || line.toLowerCase().includes('explanation')) {
-          // Extract explanation
           explanation = line.replace(/^👉\s*/, '').replace(/^explanation:\s*/i, '');
           currentLine++;
           break;
@@ -164,7 +163,6 @@ const Index = () => {
         }
       }
 
-      // Look for image URL in remaining lines
       while (currentLine < lines.length) {
         const line = lines[currentLine].trim();
         if (line.startsWith('http') || line.includes('image:') || line.includes('img:')) {
@@ -569,7 +567,6 @@ const Index = () => {
         </div>
         
         <div class="content">
-            <!-- Start Screen -->
             <div class="start-screen" id="start-screen">
                 <h2>Welcome to the Exam</h2>
                 <div class="exam-info">
@@ -593,14 +590,12 @@ const Index = () => {
                 <button class="btn" onclick="startExam()">Start Exam</button>
             </div>
             
-            <!-- Exam Screen -->
             <div class="exam-screen hidden" id="exam-screen">
                 <div class="progress-bar">
                     <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
                 </div>
                 
                 <div class="question-container" id="question-container">
-                    <!-- Questions will be loaded here -->
                 </div>
                 
                 <div class="navigation">
@@ -611,7 +606,6 @@ const Index = () => {
                 </div>
             </div>
             
-            <!-- Results Screen -->
             <div class="results-screen hidden" id="results-screen">
                 <h2>Exam Results</h2>
                 <div class="results-summary">
@@ -628,7 +622,7 @@ const Index = () => {
         const questions = ${questionsJSON};
         let currentQuestion = 0;
         let userAnswers = {};
-        let timeRemaining = ${examData.timeLimit} * 60; // Convert to seconds
+        let timeRemaining = ${examData.timeLimit} * 60;
         let timerInterval;
         let examStarted = false;
 
@@ -691,7 +685,6 @@ const Index = () => {
                 \${explanationHtml}
             \`;
             
-            // Restore previous answer if exists
             if (userAnswers[currentQuestion] !== undefined) {
                 document.getElementById(\`option-\${userAnswers[currentQuestion]}\`).classList.add('selected');
             }
@@ -701,15 +694,9 @@ const Index = () => {
         }
 
         function selectAnswer(optionIndex) {
-            // Remove previous selection
             document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
-            
-            // Add selection to clicked option
             document.getElementById(\`option-\${optionIndex}\`).classList.add('selected');
-            
-            // Store answer
             userAnswers[currentQuestion] = optionIndex;
-            
             updateNavigation();
         }
 
@@ -769,24 +756,20 @@ const Index = () => {
             
             const percentage = Math.round((correct / totalQuestions) * 100);
             
-            // Update score display
             const scoreElement = document.getElementById('final-score');
             scoreElement.textContent = percentage + '%';
             
-            // Add score class for styling
             if (percentage >= 90) scoreElement.className = 'score excellent';
             else if (percentage >= 75) scoreElement.className = 'score good';
             else if (percentage >= 60) scoreElement.className = 'score average';
             else scoreElement.className = 'score poor';
             
-            // Update score details
             document.getElementById('score-details').innerHTML = \`
                 <p><strong>Correct Answers:</strong> \${correct} out of \${totalQuestions}</p>
                 <p><strong>Percentage:</strong> \${percentage}%</p>
                 <p><strong>Grade:</strong> \${getGrade(percentage)}</p>
             \`;
             
-            // Generate detailed results
             generateDetailedResults();
         }
 
@@ -865,7 +848,6 @@ const Index = () => {
             clearInterval(timerInterval);
         }
 
-        // Prevent page refresh during exam
         window.addEventListener('beforeunload', function(e) {
             if (examStarted && !document.getElementById('results-screen').classList.contains('hidden')) {
                 e.preventDefault();
@@ -908,7 +890,6 @@ const Index = () => {
       linkElement.setAttribute('download', exportFileDefaultName);
       linkElement.click();
       
-      // Clean up
       URL.revokeObjectURL(url);
 
       toast({
@@ -924,86 +905,227 @@ const Index = () => {
     }
   };
 
+  const getCompletionPercentage = () => {
+    if (examData.questions.length === 0) return 0;
+    const filledFields = [
+      examData.title.trim() ? 1 : 0,
+      examData.description.trim() ? 1 : 0,
+      examData.questions.length > 0 ? 1 : 0
+    ].reduce((sum, val) => sum + val, 0);
+    return Math.round((filledFields / 3) * 100);
+  };
+
+  const getStatCards = () => [
+    {
+      title: "Total Questions",
+      value: examData.questions.length,
+      icon: BookOpen,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50"
+    },
+    {
+      title: "Estimated Duration",
+      value: `${examData.timeLimit} min`,
+      icon: Clock,
+      color: "text-green-600",
+      bgColor: "bg-green-50"
+    },
+    {
+      title: "Completion Rate",
+      value: `${getCompletionPercentage()}%`,
+      icon: Target,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50"
+    },
+    {
+      title: "Ready to Export",
+      value: examData.title && examData.questions.length > 0 ? "Yes" : "No",
+      icon: Award,
+      color: examData.title && examData.questions.length > 0 ? "text-emerald-600" : "text-red-600",
+      bgColor: examData.title && examData.questions.length > 0 ? "bg-emerald-50" : "bg-red-50"
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Exam HTML Craft</h1>
-          <p className="text-lg text-gray-600">Create professional HTML-based exams with ease</p>
+    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'}`}>
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header with Dark Mode Toggle */}
+        <div className="text-center mb-8 relative">
+          <div className="absolute top-0 right-0">
+            <div className="flex items-center space-x-2">
+              <Sun className="h-4 w-4" />
+              <Switch
+                checked={isDarkMode}
+                onCheckedChange={setIsDarkMode}
+                aria-label="Toggle dark mode"
+              />
+              <Moon className="h-4 w-4" />
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="relative">
+              <Sparkles className="h-8 w-8 text-blue-600 animate-pulse" />
+              <div className="absolute inset-0 h-8 w-8 text-blue-400 animate-ping">
+                <Sparkles className="h-8 w-8" />
+              </div>
+            </div>
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+              ExamCraft Pro
+            </h1>
+          </div>
+          <p className="text-xl text-gray-600 dark:text-gray-300 font-medium">
+            Create professional, interactive HTML exams with advanced features
+          </p>
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <Badge variant="secondary" className="text-sm">
+              <Zap className="h-3 w-3 mr-1" />
+              AI-Powered
+            </Badge>
+            <Badge variant="secondary" className="text-sm">
+              <Globe className="h-3 w-3 mr-1" />
+              Cross-Platform
+            </Badge>
+            <Badge variant="secondary" className="text-sm">
+              <Layers className="h-3 w-3 mr-1" />
+              Professional
+            </Badge>
+          </div>
         </div>
 
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {getStatCards().map((stat, index) => (
+            <Card key={index} className="hover:shadow-lg transition-all duration-300 border-0 shadow-md">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{stat.title}</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
+                  </div>
+                  <div className={`p-3 rounded-full ${stat.bgColor}`}>
+                    <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Progress Bar */}
+        <Card className="mb-8 border-0 shadow-md">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Exam Setup Progress</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{getCompletionPercentage()}%</span>
+            </div>
+            <Progress value={getCompletionPercentage()} className="h-2" />
+          </CardContent>
+        </Card>
+
         <Tabs defaultValue="setup" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="setup">Exam Setup</TabsTrigger>
-            <TabsTrigger value="questions">Questions ({examData.questions.length})</TabsTrigger>
-            <TabsTrigger value="export">Export</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 h-12 bg-white dark:bg-gray-800 shadow-md border-0">
+            <TabsTrigger value="setup" className="flex items-center gap-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+              <FileText className="h-4 w-4" />
+              Exam Setup
+            </TabsTrigger>
+            <TabsTrigger value="questions" className="flex items-center gap-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+              <BookOpen className="h-4 w-4" />
+              Questions ({examData.questions.length})
+            </TabsTrigger>
+            <TabsTrigger value="export" className="flex items-center gap-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+              <Download className="h-4 w-4" />
+              Export & Deploy
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="setup">
-            <Card>
-              <CardHeader>
-                <CardTitle>Exam Configuration</CardTitle>
-                <CardDescription>Set up your exam details and parameters</CardDescription>
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-lg">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Exam Configuration
+                </CardTitle>
+                <CardDescription className="text-blue-100">
+                  Set up your exam details and parameters for optimal performance
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="title">Exam Title</Label>
-                  <Input
-                    id="title"
-                    value={examData.title}
-                    onChange={(e) => setExamData(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Enter exam title"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={examData.description}
-                    onChange={(e) => setExamData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Enter exam description"
-                    rows={3}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="timeLimit">Time Limit (minutes)</Label>
-                  <Input
-                    id="timeLimit"
-                    type="number"
-                    value={examData.timeLimit}
-                    onChange={(e) => setExamData(prev => ({ ...prev, timeLimit: parseInt(e.target.value) || 60 }))}
-                    min="1"
-                  />
+              <CardContent className="p-8 space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="title" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Exam Title *</Label>
+                      <Input
+                        id="title"
+                        value={examData.title}
+                        onChange={(e) => setExamData(prev => ({ ...prev, title: e.target.value }))}
+                        placeholder="Enter a compelling exam title"
+                        className="mt-1 h-12"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="timeLimit" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Time Limit (minutes)</Label>
+                      <Input
+                        id="timeLimit"
+                        type="number"
+                        value={examData.timeLimit}
+                        onChange={(e) => setExamData(prev => ({ ...prev, timeLimit: parseInt(e.target.value) || 60 }))}
+                        min="1"
+                        max="480"
+                        className="mt-1 h-12"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="description" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={examData.description}
+                      onChange={(e) => setExamData(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Provide detailed instructions and context for your exam"
+                      rows={6}
+                      className="mt-1 resize-none"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="questions">
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-semibold">Questions</h2>
-                <div className="flex gap-2">
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Question Bank</h2>
+                  <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your exam questions with ease</p>
+                </div>
+                <div className="flex gap-3">
                   <Dialog open={isBulkImportOpen} onOpenChange={setIsBulkImportOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="outline">
-                        <Upload className="w-4 h-4 mr-2" />
+                      <Button variant="outline" className="gap-2 h-11">
+                        <Upload className="w-4 h-4" />
                         Bulk Import
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                    <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
                       <DialogHeader>
-                        <DialogTitle>Bulk Import Questions</DialogTitle>
+                        <DialogTitle className="flex items-center gap-2">
+                          <Upload className="h-5 w-5" />
+                          Bulk Import Questions
+                        </DialogTitle>
                         <DialogDescription>
-                          Import multiple questions at once. Use the format shown below. Bold options will be marked as correct answers.
+                          Import multiple questions at once using our smart format parser
                         </DialogDescription>
                       </DialogHeader>
                       
                       {!showPreview ? (
-                        <div className="space-y-4">
-                          <div className="bg-gray-50 p-4 rounded-lg">
-                            <h4 className="font-semibold mb-2">Format Example:</h4>
-                            <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+                        <div className="space-y-6">
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg border">
+                            <h4 className="font-semibold mb-4 flex items-center gap-2">
+                              <BookOpen className="h-4 w-4" />
+                              Format Example
+                            </h4>
+                            <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap bg-white dark:bg-gray-800 p-4 rounded border">
 {`1. By the time we reached the station, the train ___.
 a) leave
 b) **had left**
@@ -1026,72 +1148,74 @@ Image: https://example.com/image.jpg
                           </div>
                           
                           <div>
-                            <Label htmlFor="bulkText">Paste your questions here:</Label>
+                            <Label htmlFor="bulkText" className="text-sm font-semibold">Paste your questions here:</Label>
                             <Textarea
                               id="bulkText"
                               value={bulkImportText}
                               onChange={(e) => setBulkImportText(e.target.value)}
                               placeholder="Paste your questions in the format shown above..."
-                              rows={15}
-                              className="font-mono text-sm"
+                              rows={20}
+                              className="font-mono text-sm mt-2"
                             />
                           </div>
                           
-                          <div className="flex justify-end gap-2">
+                          <div className="flex justify-end gap-3">
                             <Button variant="outline" onClick={() => setIsBulkImportOpen(false)}>
                               Cancel
                             </Button>
-                            <Button onClick={handleBulkImportPreview}>
-                              <Eye className="w-4 h-4 mr-2" />
-                              Preview
+                            <Button onClick={handleBulkImportPreview} className="gap-2">
+                              <Eye className="w-4 h-4" />
+                              Preview Questions
                             </Button>
                           </div>
                         </div>
                       ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                           <div className="flex items-center justify-between">
-                            <h4 className="font-semibold">Preview ({previewQuestions.length} questions)</h4>
+                            <h4 className="font-semibold text-lg">Preview ({previewQuestions.length} questions found)</h4>
                             <Button variant="outline" onClick={() => setShowPreview(false)}>
                               Back to Edit
                             </Button>
                           </div>
                           
-                          <div className="max-h-96 overflow-y-auto space-y-4">
+                          <div className="max-h-96 overflow-y-auto space-y-4 pr-2">
                             {previewQuestions.map((question, index) => (
                               <Card key={question.id} className="border-l-4 border-l-blue-500">
                                 <CardContent className="pt-4">
-                                  <div className="space-y-2">
-                                    <div className="flex items-start gap-2">
-                                      <Badge variant="secondary">{index + 1}</Badge>
-                                      <p className="font-medium">{question.question}</p>
+                                  <div className="space-y-3">
+                                    <div className="flex items-start gap-3">
+                                      <Badge variant="secondary" className="mt-1">{index + 1}</Badge>
+                                      <p className="font-medium text-gray-900 dark:text-white">{question.question}</p>
                                     </div>
                                     
-                                    <div className="grid grid-cols-1 gap-1 ml-8">
+                                    <div className="grid grid-cols-1 gap-2 ml-8">
                                       {question.options.map((option, optIndex) => (
-                                        <div key={optIndex} className={`flex items-center gap-2 p-2 rounded ${
-                                          optIndex === question.correctAnswer ? 'bg-green-50 border border-green-200' : 'bg-gray-50'
+                                        <div key={optIndex} className={`flex items-center gap-2 p-3 rounded-lg transition-colors ${
+                                          optIndex === question.correctAnswer 
+                                            ? 'bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800' 
+                                            : 'bg-gray-50 dark:bg-gray-800'
                                         }`}>
                                           {optIndex === question.correctAnswer && <CheckCircle className="w-4 h-4 text-green-600" />}
-                                          <span className="font-medium">{String.fromCharCode(97 + optIndex)})</span>
-                                          <span>{option}</span>
+                                          <span className="font-medium text-sm">{String.fromCharCode(97 + optIndex)})</span>
+                                          <span className="text-sm">{option}</span>
                                         </div>
                                       ))}
                                     </div>
                                     
                                     {question.explanation && (
-                                      <div className="ml-8 mt-2 p-2 bg-blue-50 rounded border-l-4 border-l-blue-400">
+                                      <div className="ml-8 mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-l-4 border-l-blue-400">
                                         <div className="flex items-start gap-2">
                                           <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5" />
-                                          <span className="text-sm">{question.explanation}</span>
+                                          <span className="text-sm text-gray-700 dark:text-gray-300">{question.explanation}</span>
                                         </div>
                                       </div>
                                     )}
                                     
                                     {question.explanationImageUrl && (
-                                      <div className="ml-8 mt-2 p-2 bg-gray-50 rounded">
+                                      <div className="ml-8 mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
                                         <div className="flex items-center gap-2">
                                           <Image className="w-4 h-4 text-gray-600" />
-                                          <span className="text-sm text-blue-600 underline">{question.explanationImageUrl}</span>
+                                          <span className="text-sm text-blue-600 underline break-all">{question.explanationImageUrl}</span>
                                         </div>
                                       </div>
                                     )}
@@ -1101,12 +1225,12 @@ Image: https://example.com/image.jpg
                             ))}
                           </div>
                           
-                          <div className="flex justify-end gap-2">
+                          <div className="flex justify-end gap-3">
                             <Button variant="outline" onClick={() => setIsBulkImportOpen(false)}>
                               Cancel
                             </Button>
-                            <Button onClick={confirmBulkImport}>
-                              <Plus className="w-4 h-4 mr-2" />
+                            <Button onClick={confirmBulkImport} className="gap-2">
+                              <Plus className="w-4 h-4" />
                               Import {previewQuestions.length} Questions
                             </Button>
                           </div>
@@ -1115,22 +1239,30 @@ Image: https://example.com/image.jpg
                     </DialogContent>
                   </Dialog>
                   
-                  <Button onClick={addNewQuestion}>
-                    <Plus className="w-4 h-4 mr-2" />
+                  <Button onClick={addNewQuestion} className="gap-2 h-11">
+                    <Plus className="w-4 h-4" />
                     Add Question
                   </Button>
                 </div>
               </div>
 
               {examData.questions.length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-12">
-                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No questions yet</h3>
-                    <p className="text-gray-500 mb-4">Start by adding your first question or use bulk import</p>
-                    <div className="flex justify-center gap-2">
-                      <Button onClick={addNewQuestion}>Add Question</Button>
-                      <Button variant="outline" onClick={() => setIsBulkImportOpen(true)}>
+                <Card className="border-2 border-dashed border-gray-300 dark:border-gray-600">
+                  <CardContent className="text-center py-16">
+                    <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6">
+                      <FileText className="w-12 h-12 text-gray-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No questions yet</h3>
+                    <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                      Start building your exam by adding questions manually or use our bulk import feature for faster setup
+                    </p>
+                    <div className="flex justify-center gap-3">
+                      <Button onClick={addNewQuestion} className="gap-2">
+                        <Plus className="w-4 h-4" />
+                        Add First Question
+                      </Button>
+                      <Button variant="outline" onClick={() => setIsBulkImportOpen(true)} className="gap-2">
+                        <Upload className="w-4 h-4" />
                         Bulk Import
                       </Button>
                     </div>
@@ -1139,50 +1271,71 @@ Image: https://example.com/image.jpg
               ) : (
                 <div className="space-y-4">
                   {examData.questions.map((question, index) => (
-                    <Card key={question.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="pt-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="flex items-start gap-3 flex-1">
-                            <Badge variant="secondary">{index + 1}</Badge>
-                            <div className="flex-1">
-                              <p className="font-medium mb-2">{question.question}</p>
-                              <div className="grid grid-cols-2 gap-2">
+                    <Card key={question.id} className="hover:shadow-lg transition-all duration-300 border-0 shadow-md">
+                      <CardContent className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-start gap-4 flex-1">
+                            <Badge variant="outline" className="text-lg px-3 py-1 font-bold">
+                              {index + 1}
+                            </Badge>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-900 dark:text-white mb-3 leading-relaxed">
+                                {question.question}
+                              </p>
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                                 {question.options.map((option, optIndex) => (
-                                  <div key={optIndex} className={`p-2 rounded text-sm ${
+                                  <div key={optIndex} className={`p-3 rounded-lg border-2 transition-all ${
                                     optIndex === question.correctAnswer 
-                                      ? 'bg-green-50 border border-green-200 text-green-800' 
-                                      : 'bg-gray-50'
+                                      ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300' 
+                                      : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700'
                                   }`}>
-                                    <span className="font-medium">{String.fromCharCode(97 + optIndex)})</span> {option}
+                                    <div className="flex items-center gap-2">
+                                      {optIndex === question.correctAnswer && (
+                                        <CheckCircle className="w-4 h-4 text-green-600" />
+                                      )}
+                                      <span className="font-bold text-sm">
+                                        {String.fromCharCode(97 + optIndex)})
+                                      </span>
+                                      <span className="text-sm">{option}</span>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
+                              
                               {question.explanation && (
-                                <div className="mt-2 p-2 bg-blue-50 rounded border-l-4 border-l-blue-400">
+                                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-l-4 border-l-blue-400">
                                   <div className="flex items-start gap-2">
-                                    <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5" />
-                                    <span className="text-sm">{question.explanation}</span>
+                                    <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1">
+                                      <p className="text-sm text-gray-700 dark:text-gray-300 font-medium mb-1">Explanation:</p>
+                                      <p className="text-sm text-gray-600 dark:text-gray-400">{question.explanation}</p>
+                                    </div>
                                   </div>
                                 </div>
                               )}
+                              
                               {question.explanationImageUrl && (
-                                <div className="mt-2 p-2 bg-gray-50 rounded">
+                                <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                   <div className="flex items-center gap-2">
-                                    <Image className="w-4 h-4 text-gray-600" />
-                                    <span className="text-sm text-blue-600 underline">{question.explanationImageUrl}</span>
+                                    <Image className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                                    <span className="text-sm text-blue-600 underline break-all">
+                                      {question.explanationImageUrl}
+                                    </span>
                                   </div>
                                 </div>
                               )}
                             </div>
                           </div>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => editQuestion(question)}>
+                          <div className="flex gap-2 ml-4">
+                            <Button variant="outline" size="sm" onClick={() => editQuestion(question)} className="gap-1">
                               <Edit2 className="w-4 h-4" />
+                              Edit
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="outline" size="sm">
+                                <Button variant="outline" size="sm" className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50">
                                   <Trash2 className="w-4 h-4" />
+                                  Delete
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
@@ -1194,7 +1347,7 @@ Image: https://example.com/image.jpg
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => deleteQuestion(question.id)}>
+                                  <AlertDialogAction onClick={() => deleteQuestion(question.id)} className="bg-red-600 hover:bg-red-700">
                                     Delete
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
@@ -1211,47 +1364,115 @@ Image: https://example.com/image.jpg
           </TabsContent>
 
           <TabsContent value="export">
-            <Card>
-              <CardHeader>
-                <CardTitle>Export Exam</CardTitle>
-                <CardDescription>Generate your HTML exam file</CardDescription>
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-t-lg">
+                <CardTitle className="flex items-center gap-2">
+                  <Download className="h-5 w-5" />
+                  Export & Deploy
+                </CardTitle>
+                <CardDescription className="text-emerald-100">
+                  Generate your professional HTML exam file
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="font-semibold mb-2">Exam Summary</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">Title:</span>
-                      <p className="font-medium">{examData.title || "Not set"}</p>
+              <CardContent className="p-8 space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg border">
+                      <h3 className="font-semibold mb-4 flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5" />
+                        Exam Summary
+                      </h3>
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600 dark:text-gray-400">Title:</span>
+                          <p className="font-medium text-right max-w-[200px] truncate" title={examData.title}>
+                            {examData.title || "Not set"}
+                          </p>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600 dark:text-gray-400">Questions:</span>
+                          <p className="font-medium">{examData.questions.length}</p>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600 dark:text-gray-400">Time Limit:</span>
+                          <p className="font-medium">{examData.timeLimit} minutes</p>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600 dark:text-gray-400">Status:</span>
+                          <Badge variant={examData.title && examData.questions.length > 0 ? "default" : "secondary"} className="gap-1">
+                            {examData.title && examData.questions.length > 0 ? (
+                              <>
+                                <CheckCircle className="w-3 h-3" />
+                                Ready
+                              </>
+                            ) : (
+                              <>
+                                <AlertCircle className="w-3 h-3" />
+                                Incomplete
+                              </>
+                            )}
+                          </Badge>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-gray-600">Questions:</span>
-                      <p className="font-medium">{examData.questions.length}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Time Limit:</span>
-                      <p className="font-medium">{examData.timeLimit} minutes</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Status:</span>
-                      <Badge variant={examData.title && examData.questions.length > 0 ? "default" : "secondary"}>
-                        {examData.title && examData.questions.length > 0 ? "Ready" : "Incomplete"}
-                      </Badge>
+
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-6 rounded-lg border">
+                      <h3 className="font-semibold mb-4 flex items-center gap-2">
+                        <PieChart className="h-5 w-5" />
+                        Export Features
+                      </h3>
+                      <ul className="space-y-2 text-sm">
+                        <li className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          Interactive question navigation
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          Real-time timer with auto-submit
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          Detailed results with explanations
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          Mobile-responsive design
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          Professional styling & animations
+                        </li>
+                      </ul>
                     </div>
                   </div>
-                </div>
 
-                <Separator />
+                  <div className="flex flex-col justify-center items-center space-y-6">
+                    <div className="text-center">
+                      <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Download className="w-12 h-12 text-white" />
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Ready to Export?</h3>
+                      <p className="text-gray-600 dark:text-gray-400 mb-6">
+                        Generate a standalone HTML file that works anywhere
+                      </p>
+                    </div>
 
-                <div className="flex justify-center">
-                  <Button 
-                    onClick={exportExam}
-                    disabled={!examData.title.trim() || examData.questions.length === 0}
-                    size="lg"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Export HTML Exam
-                  </Button>
+                    <Button 
+                      onClick={exportExam}
+                      disabled={!examData.title.trim() || examData.questions.length === 0}
+                      size="lg"
+                      className="w-full max-w-sm h-14 text-lg gap-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
+                    >
+                      <Download className="w-5 h-5" />
+                      Export HTML Exam
+                    </Button>
+
+                    {(!examData.title.trim() || examData.questions.length === 0) && (
+                      <p className="text-sm text-red-500 text-center">
+                        Please complete exam setup and add questions before exporting
+                      </p>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1260,80 +1481,106 @@ Image: https://example.com/image.jpg
 
         {/* Edit Question Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                <Edit2 className="h-5 w-5" />
                 {editingQuestion?.id.includes('bulk_') || !examData.questions.find(q => q.id === editingQuestion?.id) 
-                  ? 'Add Question' : 'Edit Question'}
+                  ? 'Add New Question' : 'Edit Question'}
               </DialogTitle>
+              <DialogDescription>
+                Create engaging questions with multiple choice options and detailed explanations
+              </DialogDescription>
             </DialogHeader>
             
             {editingQuestion && (
-              <div className="space-y-4">
+              <div className="space-y-6 py-4">
                 <div>
-                  <Label htmlFor="questionText">Question</Label>
+                  <Label htmlFor="questionText" className="text-sm font-semibold">Question Text *</Label>
                   <Textarea
                     id="questionText"
                     value={editingQuestion.question}
                     onChange={(e) => setEditingQuestion(prev => prev ? { ...prev, question: e.target.value } : null)}
-                    placeholder="Enter your question"
-                    rows={3}
+                    placeholder="Enter your question here..."
+                    rows={4}
+                    className="mt-2 resize-none"
                   />
                 </div>
 
-                <div className="space-y-3">
-                  <Label>Options</Label>
-                  {editingQuestion.options.map((option, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <Badge variant={index === editingQuestion.correctAnswer ? "default" : "outline"}>
-                        {String.fromCharCode(97 + index)}
-                      </Badge>
-                      <Input
-                        value={option}
-                        onChange={(e) => {
-                          const newOptions = [...editingQuestion.options];
-                          newOptions[index] = e.target.value;
-                          setEditingQuestion(prev => prev ? { ...prev, options: newOptions } : null);
-                        }}
-                        placeholder={`Option ${String.fromCharCode(65 + index)}`}
-                      />
-                      <Button
-                        variant={index === editingQuestion.correctAnswer ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setEditingQuestion(prev => prev ? { ...prev, correctAnswer: index } : null)}
-                      >
-                        {index === editingQuestion.correctAnswer ? <CheckCircle className="w-4 h-4" /> : "Correct"}
-                      </Button>
-                    </div>
-                  ))}
+                <div className="space-y-4">
+                  <Label className="text-sm font-semibold">Answer Options *</Label>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {editingQuestion.options.map((option, index) => (
+                      <div key={index} className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <Badge variant={index === editingQuestion.correctAnswer ? "default" : "outline"} className="w-8 h-8 rounded-full p-0 flex items-center justify-center">
+                            {String.fromCharCode(65 + index)}
+                          </Badge>
+                          <Input
+                            value={option}
+                            onChange={(e) => {
+                              const newOptions = [...editingQuestion.options];
+                              newOptions[index] = e.target.value;
+                              setEditingQuestion(prev => prev ? { ...prev, options: newOptions } : null);
+                            }}
+                            placeholder={`Option ${String.fromCharCode(65 + index)}`}
+                            className="flex-1"
+                          />
+                          <Button
+                            variant={index === editingQuestion.correctAnswer ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setEditingQuestion(prev => prev ? { ...prev, correctAnswer: index } : null)}
+                            className="gap-1"
+                          >
+                            {index === editingQuestion.correctAnswer ? (
+                              <>
+                                <CheckCircle className="w-4 h-4" />
+                                Correct
+                              </>
+                            ) : (
+                              "Mark Correct"
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="explanation">Explanation (Optional)</Label>
-                  <Textarea
-                    id="explanation"
-                    value={editingQuestion.explanation || ""}
-                    onChange={(e) => setEditingQuestion(prev => prev ? { ...prev, explanation: e.target.value } : null)}
-                    placeholder="Provide an explanation for the correct answer"
-                    rows={2}
-                  />
+                <Separator />
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="explanation" className="text-sm font-semibold">Explanation (Optional)</Label>
+                    <Textarea
+                      id="explanation"
+                      value={editingQuestion.explanation || ""}
+                      onChange={(e) => setEditingQuestion(prev => prev ? { ...prev, explanation: e.target.value } : null)}
+                      placeholder="Provide an explanation for the correct answer"
+                      rows={4}
+                      className="mt-2 resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="explanationImage" className="text-sm font-semibold">Explanation Image URL (Optional)</Label>
+                    <Input
+                      id="explanationImage"
+                      value={editingQuestion.explanationImageUrl || ""}
+                      onChange={(e) => setEditingQuestion(prev => prev ? { ...prev, explanationImageUrl: e.target.value } : null)}
+                      placeholder="https://example.com/image.jpg"
+                      className="mt-2"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Add an image to help explain the answer</p>
+                  </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="explanationImage">Explanation Image URL (Optional)</Label>
-                  <Input
-                    id="explanationImage"
-                    value={editingQuestion.explanationImageUrl || ""}
-                    onChange={(e) => setEditingQuestion(prev => prev ? { ...prev, explanationImageUrl: e.target.value } : null)}
-                    placeholder="https://example.com/image.jpg"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-3 pt-4">
                   <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={saveQuestion}>
+                  <Button onClick={saveQuestion} className="gap-2">
+                    <CheckCircle className="w-4 h-4" />
                     Save Question
                   </Button>
                 </div>
